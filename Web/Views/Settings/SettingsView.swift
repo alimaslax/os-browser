@@ -35,36 +35,33 @@ struct SettingsView: View {
     var body: some View {
         ZStack {
             // Glass background with enhanced visual effect
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(.white.opacity(0.15), lineWidth: 0.5)
-                )
-
-            VStack(spacing: 0) {
-                // Header with close button
-                settingsHeader
-
-                Divider()
-                    .opacity(0.3)
-                    .padding(.horizontal, 24)
+            Color.bgBase
+                .edgesIgnoringSafeArea(.all)
+            
+            HStack(spacing: 0) {
+                // Category sidebar
+                categorysidebar
+                    .background(Color.bgSidebar)
 
                 // Main content area
-                HStack(spacing: 0) {
-                    // Category sidebar
-                    categorysidebar
+                VStack(spacing: 0) {
+                    // Header with close button
+                    settingsHeader
 
-                    // Vertical divider
-                    Rectangle()
-                        .fill(.white.opacity(0.1))
-                        .frame(width: 0.5)
+                    Divider()
+                        .opacity(0.1)
+                        .padding(.horizontal, 24)
 
                     // Settings content area
                     settingsContent
                 }
             }
             .opacity(contentOpacity)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+            )
         }
         .frame(
             minWidth: 600, idealWidth: 800, maxWidth: 1200, minHeight: 500, idealHeight: 600,
@@ -85,38 +82,45 @@ struct SettingsView: View {
 
     private var settingsHeader: some View {
         HStack {
-            Text("Settings")
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
-
             Spacer()
 
             Button(action: {
                 KeyboardShortcutHandler.shared.showSettingsPanel = false
             }) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title3)
-                    .foregroundColor(.secondary)
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.1))
+                        .frame(width: 24, height: 24)
+                    
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white.opacity(0.6))
+                }
             }
             .buttonStyle(PlainButtonStyle())
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 20)
-        .padding(.bottom, 16)
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+        .padding(.bottom, 8)
     }
 
     private var categorysidebar: some View {
         VStack(alignment: .leading, spacing: 4) {
+            Text("Settings")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+
             ForEach(SettingsCategory.allCases, id: \.self) { category in
                 categoryButton(category)
             }
 
             Spacer()
         }
-        .padding(.vertical, 20)
-        .padding(.leading, 24)
-        .frame(minWidth: 160, idealWidth: 180, maxWidth: 220)
+        .padding(.vertical, 24)
+        .padding(.horizontal, 8)
+        .frame(minWidth: 180, idealWidth: 200, maxWidth: 240)
     }
 
     private func categoryButton(_ category: SettingsCategory) -> some View {
@@ -128,7 +132,7 @@ struct SettingsView: View {
             HStack(spacing: 12) {
                 Image(systemName: category.icon)
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(selectedCategory == category ? .blue : .secondary)
+                    .foregroundColor(selectedCategory == category ? .white : .white.opacity(0.6))
                     .frame(width: 16)
 
                 Text(category.rawValue)
@@ -136,14 +140,14 @@ struct SettingsView: View {
                         .system(
                             size: 14, weight: selectedCategory == category ? .semibold : .medium)
                     )
-                    .foregroundColor(selectedCategory == category ? .primary : .secondary)
+                    .foregroundColor(selectedCategory == category ? .white : .white.opacity(0.6))
 
                 Spacer()
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
             .background(
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 10)
                     .fill(backgroundColorForCategory(category))
             )
         }
@@ -157,7 +161,7 @@ struct SettingsView: View {
 
     private func backgroundColorForCategory(_ category: SettingsCategory) -> Color {
         if selectedCategory == category {
-            return .blue.opacity(0.15)
+            return Color.accentBlue
         } else if hoveredCategory == category {
             return .white.opacity(0.05)
         } else {
@@ -201,13 +205,13 @@ struct GeneralSettingsView: View {
     @AppStorage("startupBehavior") private var startupBehavior = "new_tab"
     @AppStorage("enableDownloadNotifications") private var enableDownloadNotifications = true
     @AppStorage("autoCheckForUpdates") private var autoCheckForUpdates = true
+    @AppStorage("launchAtLogin") private var launchAtLogin = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        VStack(alignment: .leading, spacing: 28) {
             Text("General")
-                .font(.title3)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
+                .font(.system(size: 24, weight: .bold))
+                .foregroundColor(.white)
 
             VStack(alignment: .leading, spacing: 16) {
                 // Search Engine
@@ -224,13 +228,17 @@ struct GeneralSettingsView: View {
 
                 // Startup Behavior
                 settingsGroup("Startup") {
-                    Picker("When Web starts", selection: $startupBehavior) {
-                        Text("Open a new tab").tag("new_tab")
-                        Text("Restore previous session").tag("restore_session")
-                        Text("Open homepage").tag("homepage")
+                    VStack(alignment: .leading, spacing: 12) {
+                        Toggle("Launch at Login", isOn: $launchAtLogin)
+                        
+                        Picker("When Web starts", selection: $startupBehavior) {
+                            Text("Open a new tab").tag("new_tab")
+                            Text("Restore previous session").tag("restore_session")
+                            Text("Open homepage").tag("homepage")
+                        }
+                        .pickerStyle(MenuPickerStyle())
+                        .frame(maxWidth: 250)
                     }
-                    .pickerStyle(MenuPickerStyle())
-                    .frame(maxWidth: 250)
                 }
 
                 // Notifications
@@ -258,11 +266,10 @@ struct BasicSecuritySettingsView: View {
     @State private var showSafeBrowsingSettings = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        VStack(alignment: .leading, spacing: 28) {
             Text("Security")
-                .font(.title3)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
+                .font(.system(size: 24, weight: .bold))
+                .foregroundColor(.white)
 
             VStack(alignment: .leading, spacing: 16) {
                 // Safe Browsing (new section at top)
@@ -369,21 +376,40 @@ struct AppearanceSettingsView: View {
     @AppStorage("enableGlassEffects") private var enableGlassEffects = true
     @AppStorage("enableSmoothAnimations") private var enableSmoothAnimations = true
     @AppStorage("enableFaviconColors") private var enableFaviconColors = true
+    @AppStorage("windowTransparency") private var windowTransparency = "Partial"
     @AppStorage("sidebarWidth") private var sidebarWidth = 60.0
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        VStack(alignment: .leading, spacing: 28) {
             Text("Appearance")
-                .font(.title3)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
+                .font(.system(size: 24, weight: .bold))
+                .foregroundColor(.white)
 
             VStack(alignment: .leading, spacing: 16) {
                 // Visual Effects
                 settingsGroup("Visual Effects") {
-                    Toggle("Enable glass morphism effects", isOn: $enableGlassEffects)
-                    Toggle("Enable smooth 120fps animations", isOn: $enableSmoothAnimations)
-                    Toggle("Extract colors from favicons", isOn: $enableFaviconColors)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Toggle("Enable glass morphism effects", isOn: $enableGlassEffects)
+                        Toggle("Enable smooth 120fps animations", isOn: $enableSmoothAnimations)
+                        Toggle("Extract colors from favicons", isOn: $enableFaviconColors)
+                    }
+                }
+
+                // Window Transparency (Matched to reference image)
+                settingsGroup("Window Transparency") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Picker("Window Transparency", selection: $windowTransparency) {
+                            Text("Transparent").tag("Transparent")
+                            Text("Partial").tag("Partial")
+                            Text("Opaque").tag("Opaque")
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .frame(maxWidth: 300)
+                        
+                        Text("Semi-transparent with blur.")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.4))
+                    }
                 }
 
                 // Sidebar
@@ -414,11 +440,10 @@ struct AdvancedSettingsView: View {
     @State private var showingClearAllDataAlert = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        VStack(alignment: .leading, spacing: 28) {
             Text("Advanced")
-                .font(.title3)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
+                .font(.system(size: 24, weight: .bold))
+                .foregroundColor(.white)
 
             VStack(alignment: .leading, spacing: 16) {
                 // Performance
@@ -562,9 +587,8 @@ extension View {
     {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundColor(.primary)
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(.white)
 
             content()
                 .padding(.leading, 12)

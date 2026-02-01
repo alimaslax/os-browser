@@ -7,14 +7,14 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: isExpanded ? 0 : 12)
+            RoundedRectangle(cornerRadius: isExpanded ? 0 : 16)
                 .fill(.ultraThinMaterial)
                 .overlay(
-                    Color.black.opacity(0.40)
-                        .clipShape(RoundedRectangle(cornerRadius: isExpanded ? 0 : 12))
+                    Color.bgBase.opacity(0.85)
+                        .clipShape(RoundedRectangle(cornerRadius: isExpanded ? 0 : 16))
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: isExpanded ? 0 : 12)
+                    RoundedRectangle(cornerRadius: isExpanded ? 0 : 16)
                         .strokeBorder(
                             LinearGradient(
                                 colors: [
@@ -34,7 +34,7 @@ struct ContentView: View {
                     y: isExpanded ? 0 : 8
                 )
                 .background(Color.clear)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
             
             // Browser content inside the styled window
             BrowserView()

@@ -130,14 +130,10 @@ struct SidebarTabView: View {
                    .buttonStyle(.plain)
             }
             .padding(16)
-            .background(Color.black.opacity(0.2)) // Darker footer
+            .background(Color.white.opacity(0.03)) // Darker footer
         }
         .frame(width: 220) // Arc width is typically wider than icon-only
-        .background(
-            Color(nsColor: .windowBackgroundColor)
-                .opacity(0.8)
-                .background(.ultraThinMaterial)
-        )
+        .background(Color.bgSidebar)
         // Drop destination logic remains similar
         .dropDestination(for: Web.Tab.self) { tabs, location in
             handleTabDrop(tabs: tabs, location: location)
@@ -159,24 +155,23 @@ struct SidebarTabView: View {
         }) {
             HStack {
                 Image(systemName: "plus")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.system(size: 14, weight: .bold))
                 Text("New Tab")
                     .font(.system(size: 14, weight: .semibold))
             }
-            .foregroundColor(.primary)
+            .foregroundColor(.white)
             .frame(maxWidth: .infinity)
-            .frame(height: 44)
+            .frame(height: 40)
             .background(Color.white.opacity(0.1))
-            .cornerRadius(12)
+            .cornerRadius(10)
             .padding(.horizontal, 16)
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.white.opacity(0.05), lineWidth: 1)
                     .padding(.horizontal, 16)
             )
         }
         .buttonStyle(.plain)
-        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
     }
     
     private func handleTabDrop(tabs: [Web.Tab], location: CGPoint) {
@@ -239,8 +234,8 @@ struct SidebarTabItem: View {
                 
                 // Title
                 Text(tab.title.isEmpty ? "New Tab" : tab.title)
-                    .font(.system(size: 13, weight: isActive ? .medium : .regular))
-                    .foregroundColor(isActive ? .primary : .secondary)
+                    .font(.system(size: 13, weight: isActive ? .semibold : .medium))
+                    .foregroundColor(isActive ? .white : .white.opacity(0.6))
                     .lineLimit(1)
                 
                 Spacer()
@@ -266,7 +261,7 @@ struct SidebarTabItem: View {
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isActive ? Color.white.opacity(0.15) : (isHovered ? Color.white.opacity(0.05) : Color.clear))
+                    .fill(isActive ? Color.accentBlue : (isHovered ? Color.white.opacity(0.05) : Color.clear))
             )
         }
         .buttonStyle(.plain)
