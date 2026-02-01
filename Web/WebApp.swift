@@ -18,6 +18,13 @@ struct WebApp: App {
         _ = RuntimeSecurityMonitor.shared
         // Initialize update service and check for updates in background
         setupUpdateChecker()
+        
+        // App Group Accessibility Check
+        if SharedDataManager.shared.isAccessible {
+            os_log("✅ App Group is ACCESSIBLE", type: .info)
+        } else {
+            os_log("❌ App Group is NOT ACCESSIBLE", type: .error)
+        }
     }
 
     var body: some Scene {
