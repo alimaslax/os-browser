@@ -154,7 +154,7 @@ struct TabDisplayView: View {
     private var sidebarSection: some View {
         if displayMode == .sidebar && (!isEdgeToEdgeMode || showSidebarOnHover) {
             SidebarTabView(tabManager: tabManager)
-                .frame(width: 50)
+                .frame(width: 220) // Updated to match Arc sidebar width
                 .transition(.move(edge: .leading).combined(with: .opacity))
                 .opacity(isEdgeToEdgeMode && !showSidebarOnHover ? 0 : 1)
                 .onHover { hovering in

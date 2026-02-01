@@ -10,18 +10,58 @@ struct SidebarTabView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Window controls as first element in square format
-            CompactWindowControls()
-                .padding(.top, 8)
+            // Window controls & Navigation Area (Arc style: top left)
             
-            // Small divider
-            CavedDivider()
-                .padding(.horizontal, 12)
-                .padding(.vertical, 4)
+            // We use a ZStack to layer the window drag area behind controls if needed,
+            // but for Sidebar, we usually want these to be interactive.
+            VStack(spacing: 12) {
+                // Traffic lights placeholder area (native window controls sit here)
+                // We just give it some space if needed, or rely on native positioning.
+                // Assuming standard titlebar hidden, we might need some padding.
+                 Color.clear.frame(height: 10)
+                
+                // Navigation Controls (Back/Forward/Reload) - Minimalist
+                HStack(spacing: 16) {
+                    if let activeTab = tabManager.activeTab {
+                        Button(action: { activeTab.goBack() }) {
+                             Image(systemName: "chevron.left")
+                                 .font(.system(size: 14, weight: .medium))
+                                 .foregroundColor(activeTab.canGoBack ? .primary : .secondary.opacity(0.5))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(!activeTab.canGoBack)
+                        
+                        Button(action: { activeTab.goForward() }) {
+                             Image(systemName: "chevron.right")
+                                 .font(.system(size: 14, weight: .medium))
+                                 .foregroundColor(activeTab.canGoForward ? .primary : .secondary.opacity(0.5))
+                        }
+                        .buttonStyle(.plain)
+                         .disabled(!activeTab.canGoForward)
+                        
+                        Spacer()
+                        
+                         Button(action: { activeTab.reload() }) {
+                             Image(systemName: "arrow.clockwise")
+                                 .font(.system(size: 14, weight: .medium))
+                                 .foregroundColor(.primary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 16)
+                
+            }
+            .padding(.top, 10)
+            .padding(.bottom, 16)
             
+            // Centered "New Tab" button - Arc Style (Large Plus)
+            newTabButton
+                .padding(.bottom, 16)
+             
             // Tab list with custom scrolling
             ScrollView(.vertical, showsIndicators: false) {
-                LazyVStack(spacing: 8) {
+                LazyVStack(spacing: 2) {
                     ForEach(Array(tabManager.tabs.enumerated()), id: \.element.id) { index, tab in
                         SidebarTabItem(
                             tab: tab,
@@ -39,21 +79,10 @@ struct SidebarTabView: View {
                             // Drop zone indicator - top edge
                             Rectangle()
                                 .fill(isValidDropTarget ? Color.accentColor : Color.red)
-                                .frame(width: 44, height: 2)
+                                .frame(height: 2)
                                 .opacity(dropTargetIndex == index && isDragging ? 0.8 : 0.0)
-                                .offset(y: -23)
+                                .offset(y: -22) // Adjusted for tab height
                                 .animation(.easeInOut(duration: 0.2), value: dropTargetIndex)
-                                .animation(.easeInOut(duration: 0.2), value: isValidDropTarget)
-                        )
-                        .overlay(
-                            // Drop zone indicator - bottom edge (for last position)
-                            Rectangle()
-                                .fill(isValidDropTarget ? Color.accentColor : Color.red)
-                                .frame(width: 44, height: 2)
-                                .opacity(dropTargetIndex == index + 1 && isDragging ? 0.8 : 0.0)
-                                .offset(y: 23)
-                                .animation(.easeInOut(duration: 0.2), value: dropTargetIndex)
-                                .animation(.easeInOut(duration: 0.2), value: isValidDropTarget)
                         )
                         .onHover { hovering in
                             withAnimation(.easeInOut(duration: 0.15)) {
@@ -72,33 +101,49 @@ struct SidebarTabView: View {
                             return NSItemProvider()
                         }
                     }
-                    
-                    // Plus button positioned after tabs (where next tab would be)
-                    newTabButton
-                        .padding(.top, 2)
                 }
-                .padding(.vertical, 4)
-                .padding(.horizontal, 6)
+                .padding(.horizontal, 8) // Slight horizontal padding for list
             }
             
             Spacer()
-                .background(WindowDragArea())  // Make empty sidebar area draggable
             
-            // Bottom section with settings only
-            VStack(spacing: 8) {
-                CavedDivider()
-                    .padding(.horizontal, 12)
-                
-                settingsButton
-                    .padding(.bottom, 12)
+            // Bottom section actions (Profiles, Settings, Library)
+            HStack(spacing: 20) {
+                 Button(action: {
+                     // Library / Archive
+                  }) {
+                      Image(systemName: "archivebox")
+                          .font(.system(size: 16))
+                          .foregroundColor(.secondary)
+                  }
+                  .buttonStyle(.plain)
+                  
+                  Spacer()
+                  
+                  Button(action: {
+                      KeyboardShortcutHandler.shared.showSettingsPanel.toggle()
+                   }) {
+                       Image(systemName: "gearshape")
+                           .font(.system(size: 16))
+                           .foregroundColor(.secondary)
+                   }
+                   .buttonStyle(.plain)
             }
+            .padding(16)
+            .background(Color.black.opacity(0.2)) // Darker footer
         }
-        .frame(width: 50)
+        .frame(width: 220) // Arc width is typically wider than icon-only
+        .background(
+            Color(nsColor: .windowBackgroundColor)
+                .opacity(0.8)
+                .background(.ultraThinMaterial)
+        )
+        // Drop destination logic remains similar
         .dropDestination(for: Web.Tab.self) { tabs, location in
             handleTabDrop(tabs: tabs, location: location)
             return true
         } isTargeted: { isTargeted in
-            withAnimation(.easeInOut(duration: 0.2)) {
+             withAnimation(.easeInOut(duration: 0.2)) {
                 if !isTargeted {
                     dropTargetIndex = nil
                     isDragging = false
@@ -107,110 +152,66 @@ struct SidebarTabView: View {
         }
     }
     
+    // ARC STYLE NEW TAB BUTTON
     private var newTabButton: some View {
-        Button(action: { 
-            _ = tabManager.createNewTab() 
+        Button(action: {
+            _ = tabManager.createNewTab()
         }) {
-            Image(systemName: "plus")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(newTabHovering ? Color.primary : Color.secondary)
-                .frame(width: 36, height: 36)
-                .background(
-                    Circle()
-                        .fill(Color.secondary.opacity(newTabHovering ? 0.1 : 0.0))
-                        .scaleEffect(newTabHovering ? 1.0 : 0.8)
-                )
-        }
-        .buttonStyle(PlainButtonStyle())
-        .scaleEffect(newTabHovering ? 1.0 : 0.9)
-        .onHover { hovering in
-            withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
-                newTabHovering = hovering
+            HStack {
+                Image(systemName: "plus")
+                    .font(.system(size: 16, weight: .bold))
+                Text("New Tab")
+                    .font(.system(size: 14, weight: .semibold))
             }
+            .foregroundColor(.primary)
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
+            .background(Color.white.opacity(0.1))
+            .cornerRadius(12)
+            .padding(.horizontal, 16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    .padding(.horizontal, 16)
+            )
         }
+        .buttonStyle(.plain)
+        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
     }
-    
-    @State private var newTabHovering: Bool = false
-    
-    private var settingsButton: some View {
-        Button(action: { 
-            KeyboardShortcutHandler.shared.showSettingsPanel.toggle()
-        }) {
-            Image(systemName: "gearshape")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(settingsHovering ? Color.primary : Color.secondary)
-                .frame(width: 36, height: 36)
-                .background(
-                    Circle()
-                        .fill(Color.secondary.opacity(settingsHovering ? 0.1 : 0.0))
-                        .scaleEffect(settingsHovering ? 1.0 : 0.8)
-                )
-        }
-        .buttonStyle(PlainButtonStyle())
-        .scaleEffect(settingsHovering ? 1.0 : 0.9)
-        .onHover { hovering in
-            withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
-                settingsHovering = hovering
-            }
-        }
-    }
-    
-    @State private var settingsHovering: Bool = false
     
     private func handleTabDrop(tabs: [Web.Tab], location: CGPoint) {
         guard let droppedTab = tabs.first,
               let fromIndex = tabManager.tabs.firstIndex(where: { $0.id == droppedTab.id }) else { return }
         
-        // Enhanced drop calculation with edge detection for vertical layout
-        let tabHeight: CGFloat = 44
-        let spacing: CGFloat = 8
-        let adjustedY = max(0, location.y - 56) // Account for window controls and divider
+        let tabHeight: CGFloat = 40 // Adjusted for new tab size
+        let spacing: CGFloat = 2
+        // Adjust offset based on new header height estimation
+        let adjustedY = max(0, location.y - 120) 
         
-        // Calculate which tab position this corresponds to
         let tabIndex = Int(adjustedY / (tabHeight + spacing))
         let positionInTab = adjustedY.truncatingRemainder(dividingBy: tabHeight + spacing)
         
-        // Determine if we're closer to the top or bottom edge of the tab
-        let dropIndex: Int
-        if positionInTab < (tabHeight + spacing) / 2 {
-            // Closer to top edge - insert before this tab
-            dropIndex = min(tabIndex, tabManager.tabs.count)
-        } else {
-            // Closer to bottom edge - insert after this tab
-            dropIndex = min(tabIndex + 1, tabManager.tabs.count)
-        }
+        // ... (rest of logic similar, just need to update move)
+        let dropIndex = min(max(0, tabIndex), tabManager.tabs.count)
         
-        // Validate drop target
-        let isValidDrop = dropIndex != fromIndex && 
-                         dropIndex >= 0 && dropIndex <= tabManager.tabs.count
-        
-        // Update visual feedback
-        withAnimation(.easeInOut(duration: 0.15)) {
-            dropTargetIndex = dropIndex
+         let isValidDrop = dropIndex != fromIndex
+         
+         withAnimation(.easeInOut(duration: 0.15)) {
+            dropTargetIndex = dropIndex // Simple insertion point
             isValidDropTarget = isValidDrop
-        }
-        
-        // Perform the move using enhanced TabManager method (only if valid)
-        var success = false
-        if isValidDrop {
-            success = tabManager.moveTabSafely(fromIndex: fromIndex, toIndex: dropIndex)
-        }
-        
-        // Provide visual feedback for invalid drops
-        if !success && !isValidDrop {
-            // Haptic feedback for invalid drop
-            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-        }
-        
-        // Clean up drag state
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            withAnimation(.easeOut(duration: 0.2)) {
+         }
+         
+         if isValidDrop {
+             _ = tabManager.moveTabSafely(fromIndex: fromIndex, toIndex: dropIndex)
+         }
+         
+         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation {
                 dropTargetIndex = nil
                 isDragging = false
                 draggedTab = nil
-                isValidDropTarget = true
             }
-        }
+         }
     }
 }
 
@@ -222,335 +223,70 @@ struct SidebarTabItem: View {
     let tabManager: TabManager
     let onTap: () -> Void
     
-    @State private var showCloseButton: Bool = false
-    @State private var extractedColor: Color = .clear
-    
     var body: some View {
         Button(action: onTap) {
-            tabItemContent
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.2)) {
-                showCloseButton = hovering
-            }
-        }
-        .scaleEffect(isActive ? 1.02 : 1.0)
-        .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isActive)
-        .onReceive(tab.$favicon) { favicon in
-            extractFaviconColor(from: favicon)
-        }
-        .onReceive(tab.$url) { _ in
-            // Trigger UI update when URL changes to ensure favicon gets updated
-        }
-    }
-    
-    private var tabItemContent: some View {
-        ZStack {
-            backgroundView
-            
-            ZStack {
-                // Favicon perfectly centered in full width
-                faviconView
-                    .frame(width: 24, height: 24)
-                
-                // Incognito indicator (small icon in bottom-right of favicon)
-                if tab.isIncognito {
-                    HStack {
-                        Spacer()
-                        VStack {
-                            Spacer()
-                            incognitoIndicator
-                        }
-                    }
-                    .padding(.bottom, 8)
-                    .padding(.trailing, 8)
-                }
-                
-                // Close button positioned absolutely in top-right area
-                if showCloseButton && isHovered {
-                    HStack {
-                        Spacer()
-                        VStack {
-                            closeButton
-                                .transition(.scale.combined(with: .opacity))
-                            Spacer()
-                        }
-                    }
-                    .padding(.top, 2)
-                    .padding(.trailing, 2)
-                }
-            }
-            .frame(width: 48, height: 44)
-        }
-    }
-    
-    private var backgroundView: some View {
-        Group {
-            if isActive {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(backgroundMaterial)
-                    .overlay(
-                        // Soft glass border only for active tabs
-                        RoundedRectangle(cornerRadius: 10)
-                            .strokeBorder(
-                                LinearGradient(
-                                    colors: [
-                                        borderColor.opacity(0.8),
-                                        borderColor.opacity(0.4)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 2
-                            )
-                    )
-            } else {
-                // No background for non-active tabs
-                Color.clear
-            }
-        }
-            .shadow(
-                color: isActive ? extractedColor.opacity(0.3) : (isDragging ? .black.opacity(0.2) : .clear),
-                radius: isActive ? 12 : (isDragging ? 16 : 0),
-                x: 0,
-                y: isActive ? 3 : (isDragging ? 6 : 0)
-            )
-            .overlay(
-                // Subtle color accent from favicon with better blending - only for active tabs
-                Group {
-                    if isActive {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(
-                                RadialGradient(
-                                    colors: [
-                                        extractedColor.opacity(0.25),
-                                        extractedColor.opacity(0.15),
-                                        Color.clear
-                                    ],
-                                    center: .center,
-                                    startRadius: 8,
-                                    endRadius: 20
-                                )
-                            )
-                            .animation(.easeInOut(duration: 0.3), value: extractedColor)
-                    }
-                }
-            )
-    }
-    
-    private var backgroundMaterial: Material {
-        if isActive {
-            return .thickMaterial
-        } else if isHovered {
-            return .ultraThinMaterial
-        } else {
-            return .ultraThinMaterial
-        }
-    }
-    
-    private var borderColor: Color {
-        if isActive {
-            return extractedColor != .clear ? extractedColor : .blue
-        }
-        return .clear
-    }
-    
-    private var faviconView: some View {
-        Group {
-            if tab.isLoading {
-                // Refined loading indicator
-                ProgressView()
-                    .scaleEffect(0.7)
-                    .tint(Color.secondary)
-            } else {
-                FaviconView(tab: tab, size: 24)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-            }
-        }
-    }
-    
-    private var incognitoIndicator: some View {
-        Circle()
-            .fill(.purple.opacity(0.8))
-            .frame(width: 8, height: 8)
-            .overlay(
-                Circle()
-                    .strokeBorder(Color.white.opacity(0.6), lineWidth: 1)
-            )
-            .shadow(color: .purple.opacity(0.3), radius: 2, x: 0, y: 1)
-    }
-    
-    private var closeButton: some View {
-        Button(action: {
-            withAnimation(.spring(response: 0.2, dampingFraction: 0.9)) {
-                tabManager.closeTab(tab)
-            }
-        }) {
-            ZStack {
-                // Liquidy, bigger background with blur effect
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                Color.red.opacity(0.8),
-                                Color.red.opacity(0.6),
-                                Color.red.opacity(0.3)
-                            ],
-                            center: .topLeading,
-                            startRadius: 1,
-                            endRadius: 10
-                        )
-                    )
-                    .frame(width: 16, height: 16)
-                    .overlay(
-                        Circle()
-                            .fill(.ultraThinMaterial)
-                            .blendMode(.overlay)
-                    )
-                    .overlay(
-                        Circle()
-                            .strokeBorder(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.4),
-                                        Color.white.opacity(0.1)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 0.5
-                            )
-                    )
-                
-                // X mark
-                Image(systemName: "xmark")
-                    .font(.system(size: 6, weight: .bold))
-                    .foregroundColor(.white)
-            }
-        }
-        .buttonStyle(.plain)
-        .scaleEffect(isHovered ? 1.1 : 1.0)
-        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isHovered)
-    }
-    
-    private func extractFaviconColor(from image: NSImage?) {
-        guard let image = image,
-              let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
-            extractedColor = .clear
-            return
-        }
-        
-        // Simplified color extraction for performance
-        Task {
-            let color = await extractDominantColor(from: cgImage)
-            await MainActor.run {
-                extractedColor = color
-            }
-        }
-    }
-    
-    private func extractDominantColor(from cgImage: CGImage) async -> Color {
-        return await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .background).async {
-                // Simple average color extraction
-                let width = min(cgImage.width, 16) // Limit size for performance
-                let height = min(cgImage.height, 16)
-                
-                guard let context = CGContext(
-                    data: nil,
-                    width: width,
-                    height: height,
-                    bitsPerComponent: 8,
-                    bytesPerRow: 0,
-                    space: CGColorSpaceCreateDeviceRGB(),
-                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-                ) else {
-                    continuation.resume(returning: .clear)
-                    return
-                }
-                
-                context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
-                
-                guard let data = context.data?.assumingMemoryBound(to: UInt8.self) else {
-                    continuation.resume(returning: .clear)
-                    return
-                }
-                
-                var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
-                var pixelCount: Int = 0
-                
-                for y in 0..<height {
-                    for x in 0..<width {
-                        let offset = (y * width + x) * 4
-                        let alpha = CGFloat(data[offset + 3]) / 255.0
-                        
-                        if alpha > 0.5 { // Only consider opaque pixels
-                            r += CGFloat(data[offset]) / 255.0
-                            g += CGFloat(data[offset + 1]) / 255.0
-                            b += CGFloat(data[offset + 2]) / 255.0
-                            pixelCount += 1
-                        }
-                    }
-                }
-                
-                if pixelCount > 0 {
-                    r /= CGFloat(pixelCount)
-                    g /= CGFloat(pixelCount)
-                    b /= CGFloat(pixelCount)
-                    continuation.resume(returning: Color(red: r, green: g, blue: b))
+            HStack(spacing: 12) {
+                // Favicon
+                if tab.isLoading {
+                   ProgressView()
+                       .scaleEffect(0.5)
+                       .frame(width: 16, height: 16)
                 } else {
-                    continuation.resume(returning: .clear)
+                   FaviconView(tab: tab, size: 16)
+                       .frame(width: 16, height: 16)
+                       .clipShape(RoundedRectangle(cornerRadius: 3))
                 }
+                
+                // Title
+                Text(tab.title.isEmpty ? "New Tab" : tab.title)
+                    .font(.system(size: 13, weight: isActive ? .medium : .regular))
+                    .foregroundColor(isActive ? .primary : .secondary)
+                    .lineLimit(1)
+                
+                Spacer()
+                
+                // Close Button (Hover only)
+                if isHovered {
+                    Button(action: {
+                        tabManager.closeTab(tab)
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.secondary)
+                            .frame(width: 18, height: 18)
+                            .background(Color.white.opacity(0.1))
+                            .mask(Circle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                
+                // Audio Indicator if playing...
             }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isActive ? Color.white.opacity(0.15) : (isHovered ? Color.white.opacity(0.05) : Color.clear))
+            )
         }
+        .buttonStyle(.plain)
     }
 }
 
-// Enhanced tab preview for sidebar drag operations
 struct SidebarTabPreview: View {
     let tab: Web.Tab
     let isDragging: Bool
     
-    init(tab: Web.Tab, isDragging: Bool = false) {
-        self.tab = tab
-        self.isDragging = isDragging
-    }
-    
     var body: some View {
-        VStack(spacing: 6) {
-            // Favicon with enhanced presentation
+        HStack {
             FaviconView(tab: tab, size: 24)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-            
-            // Tab title (visible in drag preview)
-            Text(tab.title.isEmpty ? "New Tab" : tab.title)
-                .font(.system(size: 11, weight: .medium))
-                .lineLimit(2)
-                .multilineTextAlignment(.center)
-                .foregroundColor(.textPrimary)
+            Text(tab.title)
+                .font(.system(size: 13))
+                .foregroundColor(.white)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(.thickMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .strokeBorder(
-                            LinearGradient(
-                                colors: [Color.blue.opacity(0.4), Color.blue.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1.5
-                        )
-                )
-        )
-        .shadow(color: .black.opacity(0.3), radius: 16, x: 0, y: 8)
-        .shadow(color: .blue.opacity(0.15), radius: 6, x: 0, y: 3)
-        .scaleEffect(isDragging ? 1.05 : 1.0)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isDragging)
+        .padding(12)
+        .background(Color.black.opacity(0.8))
+        .cornerRadius(8)
     }
 }
 
