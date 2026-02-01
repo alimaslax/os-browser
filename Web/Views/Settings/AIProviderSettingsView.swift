@@ -530,12 +530,10 @@ struct AIProviderSettingsView: View {
             // Add provider to available list
             providerManager.addExternalProvider(providerType)
 
-            // Switch to new provider if it's the only external one
-            if providerManager.currentProvider?.providerType == .local,
-                let newProvider = providerManager.availableProviders.first(where: {
-                    ($0 as? ExternalAPIProvider)?.apiProviderType == providerType
-                })
-            {
+            // Switch to new provider automatically
+            if let newProvider = providerManager.availableProviders.first(where: {
+                ($0 as? ExternalAPIProvider)?.apiProviderType == providerType
+            }) {
                 try await providerManager.switchProvider(to: newProvider)
             }
 
@@ -658,13 +656,7 @@ struct AIProviderSettingsView: View {
 
     private func providerTypeDescription(for provider: AIProvider?) -> String {
         guard let provider = provider else { return "No provider selected" }
-
-        switch provider.providerType {
-        case .local:
-            return "Private, runs locally on your Mac"
-        case .external:
-            return "Cloud-based API service"
-        }
+        return "Cloud-based API service"
     }
 
     private func apiKeyHelpText(for providerType: SecureKeyStorage.AIProvider) -> String {

@@ -11,7 +11,6 @@ struct SettingsView: View {
     enum SettingsCategory: String, CaseIterable {
         case general = "General"
         case aiProvider = "AI Provider"
-        case modelManagement = "Model Management"
         case privacy = "Privacy"
         case usageBilling = "Usage & Billing"
         case security = "Security"
@@ -22,7 +21,6 @@ struct SettingsView: View {
             switch self {
             case .general: return "gear"
             case .aiProvider: return "brain.head.profile"
-            case .modelManagement: return "externaldrive.connected.to.line.below"
             case .privacy: return "hand.raised"
             case .security: return "lock.shield"
             case .appearance: return "paintbrush"
@@ -177,8 +175,6 @@ struct SettingsView: View {
                     GeneralSettingsView()
                 case .aiProvider:
                     AIProviderSettingsView()
-                case .modelManagement:
-                    ModelManagementView()
                 case .privacy:
                     PrivacySettingsView()
                 case .security:

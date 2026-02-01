@@ -267,7 +267,7 @@ struct AISidebar: View {
                             }) {
                                 Label(
                                     p.displayName,
-                                    systemImage: p.providerType == .local ? "lock.fill" : "network")
+                                    systemImage: "cloud")
                             }
                         }
                     }
@@ -309,7 +309,7 @@ struct AISidebar: View {
                 } label: {
                     // Icon-only to reduce truncation in header
                     HStack(spacing: 4) {
-                        Image(systemName: provider.providerType == .local ? "lock.shield" : "cloud")
+                        Image(systemName: "cloud")
                             .foregroundColor(.secondary)
                         Image(systemName: "chevron.down")
                             .font(.system(size: 11, weight: .medium))
@@ -566,9 +566,9 @@ struct AISidebar: View {
 
             let providerBadge: String = {
                 if let p = providerManager.currentProvider {
-                    return p.providerType == .local ? "Local" : p.displayName
+                    return p.displayName
                 } else {
-                    return "Local"
+                    return "AI Provider"
                 }
             }()
 
@@ -600,9 +600,9 @@ struct AISidebar: View {
 
             let providerBadge: String = {
                 if let p = providerManager.currentProvider {
-                    return p.providerType == .local ? "Local" : p.displayName
+                    return p.displayName
                 } else {
-                    return "Local"
+                    return "AI Provider"
                 }
             }()
 

@@ -6,6 +6,7 @@ struct URLBar: View {
     let themeColor: NSColor?
     let mixedContentStatus: MixedContentManager.MixedContentStatus?
     let onSubmit: (String) -> Void
+    var isSidebarMode: Bool = false
     @FocusState private var isURLBarFocused: Bool
     @State private var hovering: Bool = false
     @State private var editingText: String = ""
@@ -87,17 +88,19 @@ struct URLBar: View {
                 }
             
             // Quick actions with improved spacing
-            HStack(spacing: 6) {
-                HistoryButton()
-                DownloadsButton()
-                BookmarkButton()
-                AIToggleButton()
+            if !isSidebarMode {
+                HStack(spacing: 6) {
+                    HistoryButton()
+                    DownloadsButton()
+                    BookmarkButton()
+                    AIToggleButton()
+                }
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 4) // Further reduced for even more minimal height
+        .padding(.horizontal, isSidebarMode ? 10 : 14)
+        .padding(.vertical, isSidebarMode ? 6 : 4) // Further reduced for even more minimal height
         .background(urlBarBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .onAppear {
             syncWithURLSynchronizer()
         }
@@ -131,8 +134,15 @@ struct URLBar: View {
     private var urlBarBackground: some View {
         ZStack {
             // Fully transparent background for clean input
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.clear)
+            RoundedRectangle(cornerRadius: 10)
+                .fill(isSidebarMode ? Color.white.opacity(0.05) : Color.clear)
+                .background {
+                    if isSidebarMode {
+                        Color.white.opacity(0.02).background(.ultraThinMaterial)
+                    } else {
+                        Color.clear
+                    }
+                }
                 .allowsHitTesting(false)
             
             // Subtle theme color integration
@@ -195,9 +205,9 @@ struct URLBar: View {
             
             // Ultra-subtle border (only when not focused)
             if !isURLBarFocused {
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 10)
                     .strokeBorder(
-                        hovering ? Color.borderGlass.opacity(0.3) : Color.borderGlass.opacity(0.15),
+                        hovering ? Color.white.opacity(0.2) : (isSidebarMode ? Color.white.opacity(0.12) : Color.borderGlass.opacity(0.15)),
                         lineWidth: 0.5
                     )
                     .animation(.easeInOut(duration: 0.2), value: hovering)

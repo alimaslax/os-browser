@@ -10,23 +10,36 @@ struct SidebarTabView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Window controls & Navigation Area (Arc style: top left)
+            // Window controls spacer (traffic lights)
+            Color.clear.frame(height: 38)
             
-            // We use a ZStack to layer the window drag area behind controls if needed,
-            // but for Sidebar, we usually want these to be interactive.
+            // Integrated URL Bar & Navigation Area
             VStack(spacing: 12) {
-                // Traffic lights placeholder area (native window controls sit here)
-                // We just give it some space if needed, or rely on native positioning.
-                // Assuming standard titlebar hidden, we might need some padding.
-                 Color.clear.frame(height: 10)
+                // Main URL Bar
+                URLBar(
+                    tabID: tabManager.activeTab?.id ?? UUID(),
+                    themeColor: tabManager.activeTab?.themeColor,
+                    mixedContentStatus: nil, // Add this if available
+                    onSubmit: { urlString in
+                        if let url = URL(string: urlString) {
+                            if let activeTab = tabManager.activeTab {
+                                activeTab.navigate(to: url)
+                            } else {
+                                tabManager.createNewTab(url: url)
+                            }
+                        }
+                    },
+                    isSidebarMode: true
+                )
+                .padding(.horizontal, 12)
                 
-                // Navigation Controls (Back/Forward/Reload) - Minimalist
-                HStack(spacing: 16) {
+                // Navigation Controls (Back/Forward/Reload) - Compact
+                HStack(spacing: 20) {
                     if let activeTab = tabManager.activeTab {
                         Button(action: { activeTab.goBack() }) {
                              Image(systemName: "chevron.left")
                                  .font(.system(size: 14, weight: .medium))
-                                 .foregroundColor(activeTab.canGoBack ? .primary : .secondary.opacity(0.5))
+                                 .foregroundColor(activeTab.canGoBack ? .white : .white.opacity(0.3))
                         }
                         .buttonStyle(.plain)
                         .disabled(!activeTab.canGoBack)
@@ -34,26 +47,24 @@ struct SidebarTabView: View {
                         Button(action: { activeTab.goForward() }) {
                              Image(systemName: "chevron.right")
                                  .font(.system(size: 14, weight: .medium))
-                                 .foregroundColor(activeTab.canGoForward ? .primary : .secondary.opacity(0.5))
+                                 .foregroundColor(activeTab.canGoForward ? .white : .white.opacity(0.3))
                         }
                         .buttonStyle(.plain)
-                         .disabled(!activeTab.canGoForward)
+                        .disabled(!activeTab.canGoForward)
                         
                         Spacer()
                         
-                         Button(action: { activeTab.reload() }) {
+                        Button(action: { activeTab.reload() }) {
                              Image(systemName: "arrow.clockwise")
                                  .font(.system(size: 14, weight: .medium))
-                                 .foregroundColor(.primary)
+                                 .foregroundColor(.white.opacity(0.8))
                         }
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 16)
-                
+                .padding(.horizontal, 20)
             }
-            .padding(.top, 10)
-            .padding(.bottom, 16)
+            .padding(.bottom, 20)
             
             // Centered "New Tab" button - Arc Style (Large Plus)
             newTabButton
@@ -61,7 +72,7 @@ struct SidebarTabView: View {
              
             // Tab list with custom scrolling
             ScrollView(.vertical, showsIndicators: false) {
-                LazyVStack(spacing: 2) {
+                LazyVStack(spacing: 4) {
                     ForEach(Array(tabManager.tabs.enumerated()), id: \.element.id) { index, tab in
                         SidebarTabItem(
                             tab: tab,
@@ -72,7 +83,7 @@ struct SidebarTabView: View {
                         ) {
                             tabManager.setActiveTab(tab)
                         }
-                        .scaleEffect(isDragging && draggedTab?.id == tab.id ? 1.05 : 1.0)
+                        .scaleEffect(isDragging && draggedTab?.id == tab.id ? 1.02 : 1.0)
                         .opacity(isDragging && draggedTab?.id == tab.id ? 0.9 : 1.0)
                         .zIndex(isDragging && draggedTab?.id == tab.id ? 1000 : 0)
                         .overlay(
@@ -102,7 +113,7 @@ struct SidebarTabView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 8) // Slight horizontal padding for list
+                .padding(.horizontal, 10)
             }
             
             Spacer()
@@ -114,7 +125,7 @@ struct SidebarTabView: View {
                   }) {
                       Image(systemName: "archivebox")
                           .font(.system(size: 16))
-                          .foregroundColor(.secondary)
+                          .foregroundColor(.white.opacity(0.6))
                   }
                   .buttonStyle(.plain)
                   
@@ -125,16 +136,21 @@ struct SidebarTabView: View {
                    }) {
                        Image(systemName: "gearshape")
                            .font(.system(size: 16))
-                           .foregroundColor(.secondary)
+                           .foregroundColor(.white.opacity(0.6))
                    }
                    .buttonStyle(.plain)
             }
-            .padding(16)
-            .background(Color.white.opacity(0.03)) // Darker footer
+            .padding(20)
+            .background(Color.white.opacity(0.04))
         }
-        .frame(width: 220) // Arc width is typically wider than icon-only
-        .background(Color.bgSidebar)
-        // Drop destination logic remains similar
+        .frame(width: 250) // Slightly wider for Arc feel
+        .background(
+            ZStack {
+                Color.bgSidebar.opacity(0.6)
+                VisualEffectView(material: .hudWindow, blendingMode: .withinWindow)
+                    .opacity(0.8)
+            }
+        )
         .dropDestination(for: Web.Tab.self) { tabs, location in
             handleTabDrop(tabs: tabs, location: location)
             return true

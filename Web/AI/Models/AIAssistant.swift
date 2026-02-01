@@ -2,8 +2,8 @@ import Combine
 import Foundation
 import WebKit
 
-/// Main AI Assistant coordinator managing local AI capabilities
-/// Integrates MLX framework with context management and conversation handling
+/// Main AI Assistant coordinator for external API providers
+/// Integrates external AI services with context management and conversation handling
 @MainActor
 class AIAssistant: ObservableObject {
 
@@ -22,11 +22,8 @@ class AIAssistant: ObservableObject {
 
     // MARK: - Dependencies
 
-    private let mlxWrapper: MLXWrapper
-    private let mlxModelService: MLXModelService
     private let privacyManager: PrivacyManager
     private let conversationHistory: ConversationHistory
-    private let gemmaService: GemmaService
     private let contextManager: ContextManager
     private let memoryMonitor: SystemMemoryMonitor
     private weak var tabManager: TabManager?
@@ -34,34 +31,19 @@ class AIAssistant: ObservableObject {
 
     // MARK: - Configuration
 
-    private let aiConfiguration: AIConfiguration
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Initialization
 
     init(tabManager: TabManager? = nil) {
         // Initialize dependencies
-        self.mlxWrapper = MLXWrapper()
         self.privacyManager = PrivacyManager()
         self.conversationHistory = ConversationHistory()
         self.contextManager = ContextManager.shared
         self.memoryMonitor = SystemMemoryMonitor.shared
         self.tabManager = tabManager
 
-        // Get optimal configuration for current hardware
-        self.aiConfiguration = HardwareDetector.getOptimalAIConfiguration()
-
-        // Initialize MLX service and Gemma service after super.init equivalent
-        self.mlxModelService = MLXModelService()
-        self.gemmaService = GemmaService(
-            configuration: aiConfiguration,
-            mlxWrapper: mlxWrapper,
-            privacyManager: privacyManager,
-            mlxModelService: mlxModelService
-        )
-
-        // Set up bindings - will be called async in initialize
-        AppLog.debug("AI Assistant init: framework=\(aiConfiguration.framework)")
+        AppLog.debug("AI Assistant initialized for external providers")
     }
 
     // MARK: - Public Interface
@@ -76,76 +58,23 @@ class AIAssistant: ObservableObject {
         conversationHistory.messageCount
     }
 
-    /// FIXED: Initialize the AI system with safe parallel tasks (race condition fixed)
+    /// Initialize the AI system with external providers
     func initialize() async {
         await updateStatus("Initializing AI system...")
 
         do {
-            // Branch initialization by current provider type
+            // Only support external providers now
             guard let provider = providerManager.currentProvider else {
-                throw AIError.inferenceError("No AI provider available")
+                throw AIError.inferenceError("No AI provider available. Please configure an API key.")
             }
 
-            if provider.providerType == .local {
-                // Preserve existing detailed MLX initialization for local models
-                await updateStatus("Validating hardware compatibility...")
-                try validateHardware()
+            // External provider (BYOK): let provider handle its own initialization
+            await updateStatus("Initializing \(provider.displayName)...")
+            try await provider.initialize()
 
-                await updateStatus("Checking MLX AI model availability...")
-                if !(await mlxModelService.isAIReady()) {
-                    await updateStatus("MLX AI model not found - preparing download...")
-                    let downloadInfo = await mlxModelService.getDownloadInfo()
-                    AppLog.debug("MLX model needs download: \(downloadInfo.formattedSize)")
-                    try await mlxModelService.initializeAI()
-                }
-
-                await updateStatus("Loading MLX AI model...")
-                while !(await mlxModelService.isAIReady()) {
-                    if case .failed(let error) = mlxModelService.downloadState {
-                        throw MLXModelError.downloadFailed("MLX model download failed: \(error)")
-                    }
-                    let progress = mlxModelService.downloadProgress
-                    if progress > 0 {
-                        await updateStatus("Loading MLX AI model... (\(Int(progress * 100)))")
-                    } else {
-                        await updateStatus("Loading MLX AI model...")
-                    }
-                    try await Task.sleep(nanoseconds: 500_000_000)
-                }
-
-                // Initialize frameworks and services required for local
-                await withTaskGroup(of: Void.self) { group in
-                    if aiConfiguration.framework == .mlx {
-                        group.addTask { [weak self] in
-                            guard let self else { return }
-                            do {
-                                await self.updateStatus("Initializing MLX framework...")
-                                try await self.mlxWrapper.initialize()
-                            } catch {
-                                AppLog.error(
-                                    "MLX initialization failed: \(error.localizedDescription)")
-                            }
-                        }
-                    }
-                    group.addTask { [weak self] in
-                        guard let self else { return }
-                        do {
-                            await self.updateStatus("Setting up privacy protection...")
-                            try await self.privacyManager.initialize()
-                        } catch {
-                            AppLog.error(
-                                "Privacy manager init failed: \(error.localizedDescription)")
-                        }
-                    }
-                }
-
-                await updateStatus("Starting AI inference engine...")
-                try await gemmaService.initialize()
-            } else {
-                // External provider (BYOK): let provider handle its own initialization
-                await updateStatus("Initializing \(provider.displayName)...")
-                try await provider.initialize()
-            }
+            // Initialize privacy manager
+            await updateStatus("Setting up privacy protection...")
+            try await privacyManager.initialize()
 
             // Observe provider changes to reinitialize when switching
             setupProviderBindingsOnce()
@@ -2021,18 +1950,12 @@ class AIAssistant: ObservableObject {
                     prompt: fallbackPrompt, model: provider.selectedModel
                 ).trimmingCharacters(in: .whitespacesAndNewlines)
 
-                // If fallback is still invalid, attempt a final post-processing pass that collapses
-                // repeated phrases to salvage the summary before giving up.
+                // If fallback is still invalid, give up with a helpful message
                 if isInvalidTLDRResponse(fallbackClean) {
-                    AppLog.debug("TL;DR: Fallback invalid; attempting salvage")
-                    let salvaged = gemmaService.postProcessForTLDR(fallbackClean)
-                    if isInvalidTLDRResponse(salvaged) {
-                        AppLog.debug("TL;DR: All attempts failed; returning fallback message")
-                        // IMPROVED: Give a more informative message instead of generic error
-                        return
-                            "📄 Page content detected but summary generation encountered issues. Try refreshing the page."
-                    }
-                    return salvaged
+                    AppLog.debug("TL;DR: All attempts failed; returning fallback message")
+                    // IMPROVED: Give a more informative message instead of generic error
+                    return
+                        "📄 Page content detected but summary generation encountered issues. Try refreshing the page."
                 }
 
                 return fallbackClean
@@ -2130,19 +2053,9 @@ class AIAssistant: ObservableObject {
                     let finalResponse = accumulatedResponse.trimmingCharacters(
                         in: .whitespacesAndNewlines)
 
-                    // If we got a response but it's invalid, try to salvage it
+                    // If we got a response but it's invalid, log it
                     if !finalResponse.isEmpty && isInvalidTLDRResponse(finalResponse) {
-                        AppLog.debug("TL;DR Streaming: Invalid response; post-processing")
-                        let salvaged = gemmaService.postProcessForTLDR(finalResponse)
-
-                        if !isInvalidTLDRResponse(salvaged) && salvaged != finalResponse {
-                            // Send the difference as a correction
-                            let correction = salvaged.replacingOccurrences(
-                                of: finalResponse, with: "")
-                            if !correction.isEmpty {
-                                continuation.yield(correction)
-                            }
-                        }
+                        AppLog.debug("TL;DR Streaming: Invalid response detected")
                     }
 
                     // If no content was streamed, provide a helpful fallback
@@ -2452,11 +2365,11 @@ class AIAssistant: ObservableObject {
 
         return AISystemStatus(
             isInitialized: isInitialized,
-            framework: aiConfiguration.framework,
-            modelVariant: aiConfiguration.modelVariant,
-            memoryUsage: Int(mlxWrapper.memoryUsage),
-            inferenceSpeed: mlxWrapper.inferenceSpeed,
-            contextTokenCount: 0,  // Context processing will be added in Phase 11
+            framework: .external,
+            modelVariant: .external(providerManager.currentProvider?.selectedModel?.name ?? "unknown"),
+            memoryUsage: 0,
+            inferenceSpeed: 0,
+            contextTokenCount: 0,
             conversationLength: conversationHistory.messageCount,
             hardwareInfo: HardwareDetector.processorType.description,
             historyContextEnabled: historyContextInfo.enabled,
@@ -2488,16 +2401,7 @@ class AIAssistant: ObservableObject {
     }
 
     private func validateHardware() throws {
-        switch aiConfiguration.framework {
-        case .mlx:
-            guard HardwareDetector.isAppleSilicon else {
-                throw AIError.unsupportedHardware("MLX requires Apple Silicon")
-            }
-        case .llamaCpp:
-            // Intel Macs supported with llama.cpp
-            break
-        }
-
+        // Only check minimum memory requirement
         guard HardwareDetector.totalMemoryGB >= 8 else {
             throw AIError.insufficientMemory("Minimum 8GB RAM required")
         }
@@ -2511,53 +2415,6 @@ class AIAssistant: ObservableObject {
             .sink { _ in
                 // SwiftUI automatically triggers UI updates when @Published properties change
                 // Removed manual objectWillChange.send() to prevent unnecessary re-renders
-            }
-            .store(in: &cancellables)
-
-        // Bind MLX model status
-        mlxModelService.$isModelReady
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] isReady in
-                Task { @MainActor [weak self] in
-                    if !isReady && self?.isInitialized == true {
-                        self?.isInitialized = false
-                    }
-                }
-                if !isReady {
-                    Task { await self?.updateStatus("MLX AI model not available") }
-                }
-            }
-            .store(in: &cancellables)
-
-        // Bind download progress for status updates
-        mlxModelService.$downloadProgress
-            .receive(on: DispatchQueue.main)
-            .removeDuplicates()
-            .sink { [weak self] progress in
-                if progress > 0 && progress < 1.0 {
-                    if AppLog.isVerboseEnabled {
-                        AppLog.debug("MLX download progress: \(progress * 100)%")
-                    }
-                    Task {
-                        await self?.updateStatus(
-                            "Downloading MLX AI model: \(Int(progress * 100))%")
-                    }
-                }
-            }
-            .store(in: &cancellables)
-
-        // Bind MLX wrapper status
-        mlxWrapper.$isInitialized
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] mlxInitialized in
-                Task { @MainActor [weak self] in
-                    if !mlxInitialized && self?.aiConfiguration.framework == .mlx {
-                        self?.isInitialized = false
-                    }
-                }
-                if !mlxInitialized && self?.aiConfiguration.framework == .mlx {
-                    Task { await self?.updateStatus("MLX framework not available") }
-                }
             }
             .store(in: &cancellables)
     }

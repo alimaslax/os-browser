@@ -7,10 +7,11 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: isExpanded ? 0 : 16)
-                .fill(.ultraThinMaterial)
+            // Main Glass Surface
+            VisualEffectView(material: .underWindowBackground, blendingMode: .behindWindow)
+                .clipShape(RoundedRectangle(cornerRadius: isExpanded ? 0 : 16))
                 .overlay(
-                    Color.bgBase.opacity(0.85)
+                    Color.bgBase.opacity(0.4) // Reduced opacity for more transparency
                         .clipShape(RoundedRectangle(cornerRadius: isExpanded ? 0 : 16))
                 )
                 .overlay(
@@ -18,7 +19,7 @@ struct ContentView: View {
                         .strokeBorder(
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(0.2),
+                                    Color.white.opacity(0.15),
                                     Color.white.opacity(0.05)
                                 ],
                                 startPoint: .topLeading,
@@ -28,10 +29,10 @@ struct ContentView: View {
                         )
                 )
                 .shadow(
-                    color: .black.opacity(isExpanded ? 0 : 0.15),
-                    radius: isExpanded ? 0 : 20,
+                    color: .black.opacity(isExpanded ? 0 : 0.2),
+                    radius: isExpanded ? 0 : 30,
                     x: 0,
-                    y: isExpanded ? 0 : 8
+                    y: isExpanded ? 0 : 12
                 )
                 .background(Color.clear)
                 .clipShape(RoundedRectangle(cornerRadius: 16))

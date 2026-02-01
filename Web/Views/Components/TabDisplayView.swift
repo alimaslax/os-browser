@@ -134,11 +134,8 @@ struct TabDisplayView: View {
 
     @ViewBuilder
     private var topBarSection: some View {
-        if displayMode == .topBar && shouldShowTopTab {
-            TopBarTabView(tabManager: tabManager)
-                .frame(height: 40)
-                .transition(.move(edge: .top).combined(with: .opacity))
-        }
+        // Feature removed as requested: top tabs are hidden when sidebar is the primary navigation
+        EmptyView()
     }
 
     private var webContentSection: some View {
@@ -451,149 +448,7 @@ struct WebContentArea: View {
     var body: some View {
         // Add rounded wrapper with 1px margin
         VStack(spacing: 0) {
-            // URL bar (hidden in edge-to-edge mode, when hideTopBar is enabled, or when showing new tab)
-            if !isEdgeToEdgeMode && !hideTopBar && shouldShowURLBar {
-                HStack(spacing: 12) {
-                    // Navigation controls
-                    if let activeTab = tabManager.activeTab {
-                        NavigationControls(tab: activeTab)
-                    }
-
-                    // URL bar with URLSynchronizer integration
-                    Group {
-                        if let activeTab = tabManager.activeTab {
-                            URLBar(
-                                tabID: activeTab.id,
-                                themeColor: activeTab.themeColor,
-                                mixedContentStatus: nil,
-                                onSubmit: navigateToURL
-                            )
-                        } else {
-                            URLBar(
-                                tabID: UUID(),  // Temporary ID for new tab creation
-                                themeColor: nil,
-                                mixedContentStatus: nil,
-                                onSubmit: navigateToURL
-                            )
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 6)  // Further reduced for even more minimal height
-                .background(
-                    ZStack {
-                        // Clean base with subtle material and window drag capability
-                        Rectangle()
-                            .fill(.ultraThinMaterial)
-                            .opacity(0.3)
-                            .background(WindowDragArea())
-
-                        // Next-gen ambient gradient system
-                        if let themeColor = tabManager.activeTab?.themeColor {
-                            // Primary ambient glow (top-left origin)
-                            Rectangle()
-                                .fill(
-                                    EllipticalGradient(
-                                        colors: [
-                                            Color(themeColor).opacity(0.08),
-                                            Color(themeColor).opacity(0.05),
-                                            Color(themeColor).opacity(0.02),
-                                            Color.clear,
-                                        ],
-                                        center: .init(x: 0.1, y: 0.0),
-                                        startRadiusFraction: 0.1,
-                                        endRadiusFraction: 1.2
-                                    )
-                                )
-                                .animation(
-                                    .spring(response: 0.8, dampingFraction: 0.8), value: themeColor)
-
-                            // Secondary ambient point (center-right)
-                            Rectangle()
-                                .fill(
-                                    EllipticalGradient(
-                                        colors: [
-                                            Color.clear,
-                                            Color(themeColor).opacity(0.04),
-                                            Color(themeColor).opacity(0.07),
-                                            Color(themeColor).opacity(0.03),
-                                            Color.clear,
-                                        ],
-                                        center: .init(x: 0.85, y: 0.5),
-                                        startRadiusFraction: 0.15,
-                                        endRadiusFraction: 0.9
-                                    )
-                                )
-                                .animation(
-                                    .spring(response: 0.8, dampingFraction: 0.8), value: themeColor)
-
-                            // Tertiary diffused glow (bottom spread)
-                            Rectangle()
-                                .fill(
-                                    EllipticalGradient(
-                                        colors: [
-                                            Color.clear,
-                                            Color.clear,
-                                            Color(themeColor).opacity(0.03),
-                                            Color(themeColor).opacity(0.06),
-                                            Color(themeColor).opacity(0.02),
-                                            Color.clear,
-                                        ],
-                                        center: .init(x: 0.4, y: 1.0),
-                                        startRadiusFraction: 0.2,
-                                        endRadiusFraction: 0.8
-                                    )
-                                )
-                                .animation(
-                                    .spring(response: 0.8, dampingFraction: 0.8), value: themeColor)
-                        } else {
-                            // Subtle fallback ambient system
-                            Rectangle()
-                                .fill(
-                                    EllipticalGradient(
-                                        colors: [
-                                            Color.accentBeam.opacity(0.04),
-                                            Color.accentBeam.opacity(0.02),
-                                            Color.clear,
-                                        ],
-                                        center: .init(x: 0.2, y: 0.0),
-                                        startRadiusFraction: 0.15,
-                                        endRadiusFraction: 1.0
-                                    )
-                                )
-
-                            Rectangle()
-                                .fill(
-                                    EllipticalGradient(
-                                        colors: [
-                                            Color.clear,
-                                            Color.accentBeam.opacity(0.03),
-                                            Color.accentBeam.opacity(0.01),
-                                            Color.clear,
-                                        ],
-                                        center: .init(x: 0.7, y: 1.0),
-                                        startRadiusFraction: 0.3,
-                                        endRadiusFraction: 0.7
-                                    )
-                                )
-                        }
-
-                        // Minimal surface highlight
-                        Rectangle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.015),
-                                        Color.clear,
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-                    }
-                )
-            }
+            // Top URL bar removed in favor of Sidebar/Integrated URL bar
 
             // Web content with smart status bar overlay and network error handling
             ZStack(alignment: .bottom) {

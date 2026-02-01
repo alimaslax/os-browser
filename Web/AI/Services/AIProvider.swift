@@ -1,6 +1,6 @@
 import Foundation
 
-/// Abstract protocol for AI providers supporting both local MLX and external APIs
+/// Abstract protocol for AI providers supporting external APIs
 /// Provides unified interface for different AI backends with streaming support
 @MainActor
 protocol AIProvider {
@@ -90,13 +90,10 @@ protocol AIProvider {
 
 /// Type of AI provider
 enum AIProviderType: String, CaseIterable {
-    case local = "local"
     case external = "external"
 
     var displayName: String {
         switch self {
-        case .local:
-            return "Local (Private)"
         case .external:
             return "External API"
         }
@@ -114,18 +111,6 @@ struct AIModel: Identifiable, Codable, Hashable {
     let capabilities: [AICapability]
     let provider: String
     let isAvailable: Bool
-
-    static let defaultLocal = AIModel(
-        id: "gemma3_2B_4bit",
-        name: "Gemma 3 2B",
-        description: "Local privacy-focused model optimized for Apple Silicon",
-        contextWindow: 8192,
-        costPerToken: nil,
-        pricing: nil,
-        capabilities: [.textGeneration, .conversation, .summarization],
-        provider: "local_mlx",
-        isAvailable: true
-    )
 }
 
 /// Pricing details expressed per 1M tokens
@@ -228,9 +213,6 @@ class AIProviderManager: ObservableObject {
 
     /// Register all available providers
     private func loadAvailableProviders() {
-        // Local MLX provider is always available
-        availableProviders.append(LocalMLXProvider())
-
         // External providers available if API keys exist
         for providerType in SecureKeyStorage.AIProvider.allCases {
             if secureStorage.hasAPIKey(for: providerType) {
@@ -250,12 +232,9 @@ class AIProviderManager: ObservableObject {
             let provider = availableProviders.first(where: { $0.providerId == savedProviderId })
         {
             currentProvider = provider
-        } else if let external = availableProviders.first(where: { $0.providerType == .external }) {
-            // Prefer an external provider by default when a key exists (BYOK)
-            currentProvider = external
-        } else {
-            // Fallback to local MLX provider
-            currentProvider = availableProviders.first { $0.providerType == .local }
+        } else if let firstAvailable = availableProviders.first {
+            // Use first available external provider
+            currentProvider = firstAvailable
         }
     }
 
@@ -314,15 +293,17 @@ class AIProviderManager: ObservableObject {
             return false
         }
 
-        // Switch to local provider if current provider was removed
+        // Switch to another provider if current provider was removed
         if let currentProvider = currentProvider,
             let externalProvider = currentProvider as? ExternalAPIProvider,
             externalProvider.apiProviderType == providerType
         {
             Task {
-                if let localProvider = availableProviders.first(where: { $0.providerType == .local }
-                ) {
-                    try? await switchProvider(to: localProvider)
+                if let anotherProvider = availableProviders.first {
+                    try? await switchProvider(to: anotherProvider)
+                } else {
+                    // No providers available
+                    self.currentProvider = nil
                 }
             }
         }

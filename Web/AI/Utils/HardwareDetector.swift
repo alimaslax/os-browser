@@ -317,11 +317,13 @@ struct AIConfiguration {
     enum Framework {
         case mlx
         case llamaCpp
+        case external  // External API providers (OpenAI, Anthropic, Gemini)
     }
     
     enum ModelVariant {
         case gemma3n_2B    // Gemma 3n 2B - 4.79GB bundled
         case custom(String)
+        case external(String)  // External API model name
     }
     
     enum Quantization {

@@ -7,11 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C828AF572E3192DC005CB107 /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = C828AF562E3192DC005CB107 /* MLX */; };
-		C828AF592E3192DC005CB107 /* MLXNN in Frameworks */ = {isa = PBXBuildFile; productRef = C828AF582E3192DC005CB107 /* MLXNN */; };
-		C828AF5B2E3192DC005CB107 /* MLXOptimizers in Frameworks */ = {isa = PBXBuildFile; productRef = C828AF5A2E3192DC005CB107 /* MLXOptimizers */; };
-		C828AF5E2E3192FA005CB107 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = C828AF5D2E3192FA005CB107 /* MLXLLM */; };
-		C828AF602E3192FA005CB107 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = C828AF5F2E3192FA005CB107 /* MLXLMCommon */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -73,11 +68,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C828AF5E2E3192FA005CB107 /* MLXLLM in Frameworks */,
-				C828AF5B2E3192DC005CB107 /* MLXOptimizers in Frameworks */,
-				C828AF592E3192DC005CB107 /* MLXNN in Frameworks */,
-				C828AF572E3192DC005CB107 /* MLX in Frameworks */,
-				C828AF602E3192FA005CB107 /* MLXLMCommon in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -138,11 +128,6 @@
 			);
 			name = Web;
 			packageProductDependencies = (
-				C828AF562E3192DC005CB107 /* MLX */,
-				C828AF582E3192DC005CB107 /* MLXNN */,
-				C828AF5A2E3192DC005CB107 /* MLXOptimizers */,
-				C828AF5D2E3192FA005CB107 /* MLXLLM */,
-				C828AF5F2E3192FA005CB107 /* MLXLMCommon */,
 			);
 			productName = Web;
 			productReference = C87E1A952E2D796900CB6104 /* Web.app */;
@@ -227,8 +212,6 @@
 			mainGroup = C87E1A8C2E2D796900CB6104;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				C828AF552E3192DC005CB107 /* XCRemoteSwiftPackageReference "mlx-swift" */,
-				C828AF5C2E3192FA005CB107 /* XCRemoteSwiftPackageReference "mlx-swift-examples" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C87E1A962E2D796900CB6104 /* Products */;
@@ -605,52 +588,9 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		C828AF552E3192DC005CB107 /* XCRemoteSwiftPackageReference "mlx-swift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/ml-explore/mlx-swift";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
-		C828AF5C2E3192FA005CB107 /* XCRemoteSwiftPackageReference "mlx-swift-examples" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/ml-explore/mlx-swift-examples";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
 
-/* Begin XCSwiftPackageProductDependency section */
-		C828AF562E3192DC005CB107 /* MLX */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = C828AF552E3192DC005CB107 /* XCRemoteSwiftPackageReference "mlx-swift" */;
-			productName = MLX;
-		};
-		C828AF582E3192DC005CB107 /* MLXNN */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = C828AF552E3192DC005CB107 /* XCRemoteSwiftPackageReference "mlx-swift" */;
-			productName = MLXNN;
-		};
-		C828AF5A2E3192DC005CB107 /* MLXOptimizers */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = C828AF552E3192DC005CB107 /* XCRemoteSwiftPackageReference "mlx-swift" */;
-			productName = MLXOptimizers;
-		};
-		C828AF5D2E3192FA005CB107 /* MLXLLM */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = C828AF5C2E3192FA005CB107 /* XCRemoteSwiftPackageReference "mlx-swift-examples" */;
-			productName = MLXLLM;
-		};
-		C828AF5F2E3192FA005CB107 /* MLXLMCommon */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = C828AF5C2E3192FA005CB107 /* XCRemoteSwiftPackageReference "mlx-swift-examples" */;
-			productName = MLXLMCommon;
-		};
-/* End XCSwiftPackageProductDependency section */
+
+
 	};
 	rootObject = C87E1A8D2E2D796900CB6104 /* Project object */;
 }
